@@ -1,0 +1,35 @@
+{
+  "id": "/nina-creative/",
+  "name": "Nina Creative",
+  "short_name": "Nina Creative",
+  "description": "Nina Creative 离线图片尺寸调整、压缩、格式转换与批量下载工具",
+  "start_url": "/nina-creative/?source=installed-pwa",
+  "scope": "/nina-creative/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "zh-CN",
+  "background_color": "#8cb4e8",
+  "theme_color": "#8cb4e8",
+  "categories": ["photo", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/nina-creative/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nina-creative/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nina-creative/pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
