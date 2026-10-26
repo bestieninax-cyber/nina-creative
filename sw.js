@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nina-creative-pwa-github-v1';
+const CACHE_NAME = 'nina-creative-pwa-github-v2';
 const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const CORE_ASSETS = [
   `${BASE_PATH}index.html`,
@@ -8,7 +8,7 @@ const CORE_ASSETS = [
   `${BASE_PATH}pwa-icon-512.png`,
   `${BASE_PATH}pwa-maskable-512.png`,
   `${BASE_PATH}apple-touch-icon.png`,
-  `${BASE_PATH}site-background-mobile.png`
+  `${BASE_PATH}site-background.png`
 ];
 
 async function cacheAppShell() {
