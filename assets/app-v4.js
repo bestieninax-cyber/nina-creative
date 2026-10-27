@@ -2338,7 +2338,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 })(me);
 var Ae = me.exports;
-const Ie = Ee(Ae), Wt = "/";
+const Ie = Ee(Ae), Wt = window.location.pathname.startsWith("/nina-creative/") ? "/nina-creative/" : "/";
 document.documentElement.style.setProperty("--site-background-url", `url("${Wt}site-background.png")`);
 let ge = false;
 "serviceWorker" in navigator && window.addEventListener("load", async () => {
