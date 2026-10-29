@@ -2514,26 +2514,36 @@ function Le() {
   const s = ut[vt];
   s && (URL.revokeObjectURL(s.url), ut.splice(vt, 1), vt = ut.length ? Math.min(vt, ut.length - 1) : -1, se = Promise.all(ut.map((C) => C.ready)), vt >= 0 ? xe(vt) : Vt());
 }
-async function Yt(s, C) {
+async function Yt(s, C, options = {}) {
   var A, m;
   if (gt) try {
     if ((typeof gt.queryPermission == "function" ? await gt.queryPermission({ mode: "readwrite" }) : "granted") !== "granted" && typeof gt.requestPermission == "function" && await gt.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("\u6587\u4EF6\u5939\u5199\u5165\u6743\u9650\u672A\u6388\u4E88");
-    const r = await (await gt.getFileHandle(C, { create: true })).createWritable();
+    const a = await gt.getFileHandle(C, { create: true }), r = await a.createWritable();
     await r.write(s), await r.close();
-    return;
-  } catch {
+    const h = await a.getFile();
+    if (h.size !== s.size) throw new Error(`\u5199\u5165\u6821\u9A8C\u5931\u8D25\uFF1A${C}`);
+    return { ok: true, name: C, destination: "directory" };
+  } catch (a) {
+    if (options.strictDirectory) throw a;
     gt = null, St = "browser", u.savePathName.textContent = "\u539F\u4FDD\u5B58\u5730\u5740\u6743\u9650\u5931\u6548\uFF0C\u5DF2\u6539\u7528\u672C\u673A\u9ED8\u8BA4\u4E0B\u8F7D\u5730\u5740", (A = u.chooseSavePath.closest(".save-path-row")) == null || A.classList.remove("selected");
   }
   if (St === "prompt" && typeof window.showSaveFilePicker == "function") try {
     const o = await (await window.showSaveFilePicker({ id: "mt-image-tool-download", suggestedName: C, startIn: "downloads" })).createWritable();
     await o.write(s), await o.close();
-    return;
+    return { ok: true, name: C, destination: "picker" };
   } catch (a) {
-    if (a.name === "AbortError") return;
+    if (a.name === "AbortError") return { ok: false, name: C, cancelled: true };
     St = "browser", u.savePathName.textContent = "\u4FDD\u5B58\u4F4D\u7F6E\u9009\u62E9\u5931\u8D25\uFF0C\u5DF2\u6539\u7528\u672C\u673A\u9ED8\u8BA4\u4E0B\u8F7D\u5730\u5740", (m = u.chooseSavePath.closest(".save-path-row")) == null || m.classList.remove("selected");
   }
   const i = document.createElement("a");
   i.href = URL.createObjectURL(s), i.download = C, i.click(), setTimeout(() => URL.revokeObjectURL(i.href), 1e3);
+  return { ok: true, name: C, destination: "browser" };
+}
+function Pt(s, C) {
+  const i = s.lastIndexOf("."), A = i > 0 ? s.slice(0, i) : s, m = i > 0 ? s.slice(i) : "";
+  let a = s, o = 2;
+  for (; C.has(a.toLocaleLowerCase()); ) a = `${A}-${o++}${m}`;
+  return C.add(a.toLocaleLowerCase()), a;
 }
 function Ue(s) {
   return new Promise((C, i) => {
@@ -2786,15 +2796,35 @@ u.chooseSavePath.onclick = async () => {
   }
 };
 const De = async () => {
-  for (const s of J.results) await Yt(s.blob, Xt(s)), await new Promise((C) => setTimeout(C, 120));
+  if (!J.results.length) return;
+  const s = J.results.length, C = !!gt, i = gt == null ? void 0 : gt.name, A = new Set();
+  let m = 0;
+  const a = [];
+  u.downloadMultiple.disabled = true, u.downloadMultiple.textContent = `\u4FDD\u5B58\u4E2D 0/${s}`;
+  for (const o of J.results) {
+    const r = Pt(Xt(o), A);
+    try {
+      const h = await Yt(o.blob, r, { strictDirectory: C });
+      h != null && h.ok ? m += 1 : a.push(r);
+    } catch {
+      a.push(r);
+    }
+    u.downloadMultiple.textContent = `\u4FDD\u5B58\u4E2D ${m + a.length}/${s}`, u.savePathName.textContent = `\u6B63\u5728\u4FDD\u5B58\uFF1A${m}/${s} \u5F20\u6210\u529F`;
+    C || await new Promise((h) => setTimeout(h, 180));
+  }
+  if (a.length) {
+    u.savePathName.textContent = `\u4FDD\u5B58\u5B8C\u6210\uFF1A${m}/${s} \u5F20\u6210\u529F\uFF0C${a.length} \u5F20\u5931\u8D25`;
+    window.alert(`\u672C\u6B21\u5DF2\u4FDD\u5B58 ${m}/${s} \u5F20\u3002\n\u672A\u4FDD\u5B58\uFF1A${a.slice(0, 8).join("\u3001")}${a.length > 8 ? "\u7B49" : ""}\u3002\n\u8BF7\u68C0\u67E5\u6587\u4EF6\u5939\u5199\u5165\u6743\u9650\u540E\u91CD\u8BD5\u3002`);
+  } else u.savePathName.textContent = C ? `\u5DF2\u4FDD\u5B58 ${m}/${s} \u5F20\u5230\uFF1A${i}` : `\u5DF2\u53D1\u8D77 ${m}/${s} \u5F20\u4E0B\u8F7D`;
+  zt();
 };
 u.downloadSingle.onclick = () => {
   J.results[0] && Yt(J.results[0].blob, Xt(J.results[0]));
 };
 u.downloadMultiple.onclick = De;
 u.downloadZip.onclick = async () => {
-  const s = new Ie();
-  J.results.forEach((C) => s.file(Xt(C), C.blob)), await Yt(await s.generateAsync({ type: "blob" }), `pixel-workshop-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`);
+  const s = new Ie(), C = new Set();
+  J.results.forEach((i) => s.file(Pt(Xt(i), C), i.blob)), await Yt(await s.generateAsync({ type: "blob" }), `pixel-workshop-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`);
 };
 u.selectAllResults.onclick = () => {
   const s = J.results.filter((i) => !i.pinned), C = !s.every((i) => i.selected);
