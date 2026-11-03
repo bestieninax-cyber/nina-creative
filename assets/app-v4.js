@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 50328)
+Total output lines: 3141
+
 (function() {
   const C = document.createElement("link").relList;
   if (C && C.supports && C.supports("modulepreload")) return;
@@ -1587,19 +1590,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, m.deflateSetDictionary = function(t, N) {
         var R, p, f, z, M, D, I, $, G = N.length;
         if (!t || !t.state || (z = (R = t.state).wrap) === 2 || z === 1 && R.status !== y || R.lookahead) return g;
-        for (z === 1 && (t.adler = h(t.adler, N, G, 0)), R.wrap = 0, G >= R.w_size && (z === 0 && (rt(R.head), R.strstart = 0, R.block_start = 0, R.insert = 0), $ = new o.Buf8(R.w_size), o.arraySet($, N, G - R.w_size, R.w_size, 0), N = $, G = R.w_size), M = t.avail_in, D = t.next_in, I = t.input, t.avail_in = G, t.next_in = 0, t.input = N, ct(R); R.lookahead >= P; ) {
-          for (p = R.strstart, f = R.lookahead - (P - 1); R.ins_h = (R.ins_h << R.hash_shift ^ R.window[p + P - 1]) & R.hash_mask, R.prev[p & R.w_mask] = R.head[R.ins_h], R.head[R.ins_h] = p, p++, --f; ) ;
-          R.strstart = p, R.lookahead = P - 1, ct(R);
-        }
-        return R.strstart += R.lookahead, R.block_start = R.strstart, R.insert = R.lookahead, R.lookahead = 0, R.match_length = R.prev_length = P - 1, R.match_available = 0, t.next_in = D, t.input = I, t.avail_in = M, R.wrap = z, l;
-      }, m.deflateInfo = "pako deflate (from Nodeca project)";
-    }, { "../utils/common": 41, "./adler32": 43, "./crc32": 45, "./messages": 51, "./trees": 52 }], 47: [function(i, A, m) {
-      A.exports = function() {
-        this.text = 0, this.time = 0, this.xflags = 0, this.os = 0, this.extra = null, this.extra_len = 0, this.name = "", this.comment = "", this.hcrc = 0, this.done = false;
-      };
-    }, {}], 48: [function(i, A, m) {
-      A.exports = function(a, o) {
-        var r, h, b, k, w, _, l, g, n, d, c, v, x, S, E, L, B, j, P, H, et, y, U, e, F;
+        for (z === 1 && (t.adler = h(t.adler, N, G, 0)), R.wrap = 0, G >= R.w_size && (z === 0 && (rt(R.head), R.strst…328 tokens truncated…, e, F;
         r = a.state, h = a.next_in, e = a.input, b = h + (a.avail_in - 5), k = a.next_out, F = a.output, w = k - (o - a.avail_out), _ = k + (a.avail_out - 257), l = r.dmax, g = r.wsize, n = r.whave, d = r.wnext, c = r.window, v = r.hold, x = r.bits, S = r.lencode, E = r.distcode, L = (1 << r.lenbits) - 1, B = (1 << r.distbits) - 1;
         t: do {
           x < 15 && (v += e[h++] << x, x += 8, v += e[h++] << x, x += 8), j = S[v & L];
@@ -2421,7 +2412,7 @@ const batchSmartExtendButton = document.createElement("button");
 batchSmartExtendButton.id = "batchSmartExtend";
 batchSmartExtendButton.className = "secondary-button small";
 batchSmartExtendButton.type = "button";
-batchSmartExtendButton.textContent = "场景自然延展";
+batchSmartExtendButton.textContent = "AI 场景自然延展";
 batchSmartExtendButton.disabled = true;
 saveActions.insertBefore(refreshResultsButton, u.selectAllResults);
 saveActions.insertBefore(clearAllResultsButton, u.selectAllResults);
@@ -2432,7 +2423,7 @@ u.clearAllResults = clearAllResultsButton;
 u.batchWhitePad = batchWhitePadButton;
 u.batchSmartExtend = batchSmartExtendButton;
 u.sizePreset.querySelector('[value="800x800"]').insertAdjacentHTML("afterend", '<option value="1000x1000">1000 × 1000 px</option>');
-u.fit.insertAdjacentHTML("beforeend", '<option value="extend">场景自然延展（无白边）</option>');
+u.fit.insertAdjacentHTML("beforeend", '<option value="extend">AI 场景自然延展（联网）</option>');
 be.append(u.resultsSection);
 be.insertAdjacentElement("afterend", _e);
 u.resultsSection.classList.add("results-in-workspace");
@@ -2576,6 +2567,38 @@ function Ue(s) {
 function Et(s, C, i) {
   return new Promise((A) => s.toBlob(A, C, i));
 }
+function loadSceneImage(s) {
+  return new Promise((C, i) => {
+    const A = new Image();
+    A.onload = () => C(A), A.onerror = i, A.src = s;
+  });
+}
+async function createNaturalSceneExtension(s) {
+  const C = "https://nina-creative-ai.bestieninax.chatgpt.site";
+  if (!location.hostname.endsWith("chatgpt.site")) {
+    window.open(C, "_blank", "noopener");
+    throw new Error("AI 场景自然延展已在新页面打开，请在那里重新选择图片。");
+  }
+  const i = 1024, A = document.createElement("canvas");
+  A.width = i, A.height = i;
+  const m = A.getContext("2d"), a = Math.min(i / s.naturalWidth, i / s.naturalHeight), o = Math.round(s.naturalWidth * a), r = Math.round(s.naturalHeight * a), h = Math.round((i - o) / 2), b = Math.round((i - r) / 2);
+  m.clearRect(0, 0, i, i), m.drawImage(s, h, b, o, r);
+  const k = document.createElement("canvas");
+  k.width = i, k.height = i;
+  const w = k.getContext("2d");
+  w.clearRect(0, 0, i, i), w.fillStyle = "#ffffff", w.fillRect(h, b, o, r);
+  const _ = await fetch("/api/outpaint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: A.toDataURL("image/png"), mask: k.toDataURL("image/png") }) }), l = await _.json().catch(() => ({}));
+  if (_.status === 401 && l.sign_in_url) {
+    location.href = l.sign_in_url;
+    throw new Error("正在前往登录页面…");
+  }
+  if (!_.ok || !l.image) throw new Error(l.message || "AI 场景自然延展失败，请稍后重试。");
+  const g = await loadSceneImage(l.image), n = document.createElement("canvas");
+  n.width = i, n.height = i;
+  const d = n.getContext("2d");
+  d.drawImage(g, 0, 0, i, i), d.drawImage(s, h, b, o, r);
+  return n;
+}
 function Ne(s, C, i, A) {
   const m = Number(A) || 0;
   if (!m) return;
@@ -2598,7 +2621,12 @@ async function ue(s, C) {
   const a = Number(u.targetMB.value) * (u.targetUnit.value === "KB" ? 1024 : 1024 * 1024), o = xt, r = document.createElement("canvas");
   r.width = A, r.height = m;
   const h = r.getContext("2d");
-  h.fillStyle = u.bgColor.value, h.fillRect(0, 0, A, m), h.filter = `brightness(${u.brightness.value}%) contrast(${u.contrast.value}%) saturate(${u.saturation.value}%)`, Fe(h, i, A, m), h.filter = "none", Ne(h, A, m, u.temperature.value), Gt(h, A, m);
+  h.fillStyle = u.bgColor.value, h.fillRect(0, 0, A, m), h.filter = `brightness(${u.brightness.value}%) contrast(${u.contrast.value}%) saturate(${u.saturation.value}%)`;
+  if (u.fit.value === "extend") {
+    const d = await createNaturalSceneExtension(i);
+    h.drawImage(d, 0, 0, A, m);
+  } else Fe(h, i, A, m);
+  h.filter = "none", Ne(h, A, m, u.temperature.value), Gt(h, A, m);
   let b = Number(u.quality.value) / 100, k = await Et(r, o, b);
   if (a && o !== "image/png") for (let d = b; d >= 0.1 && k.size > a; d -= 0.06) k = await Et(r, o, d);
   if (a && o === "image/png" && k.size > a) {
@@ -2618,13 +2646,6 @@ function Xt(s) {
 }
 function Fe(s, C, i, A) {
   const m = u.fit.value, a = Number(u.zoom.value) / 100, o = Number(u.positionX.value) / 100, r = Number(u.positionY.value) / 100;
-  if (m === "extend") {
-    const l = Math.max(i / C.naturalWidth, A / C.naturalHeight) * 1.08, g = C.naturalWidth * l, n = C.naturalHeight * l;
-    s.save(), s.filter = `blur(${Math.max(14, Math.round(Math.min(i, A) * 0.022))}px) brightness(0.96) saturate(0.94)`, s.globalAlpha = 0.98, s.drawImage(C, (i - g) / 2, (A - n) / 2, g, n), s.restore();
-    const d = Math.min(i / C.naturalWidth, A / C.naturalHeight) * a, c = C.naturalWidth * d, v = C.naturalHeight * d;
-    s.drawImage(C, (i - c) * o, (A - v) * r, c, v);
-    return;
-  }
   if (m === "stretch") {
     const _ = i * a, l = A * a;
     s.drawImage(C, (i - _) * o, (A - l) * r, _, l);
@@ -2715,6 +2736,8 @@ async function Jt() {
       A.previewUrl = URL.createObjectURL(A.blob), A.selected = false, A.pinned = false, J.results.push(A), u.resultCount.textContent = String(J.results.length), u.process.innerHTML = `\u5904\u7406\u4E2D ${J.results.length}/${s.length} <span>\u25CC</span>`;
     }
     C = true;
+  } catch (i) {
+    re((i == null ? void 0 : i.message) || "处理失败，请稍后重试。");
   } finally {
     C && (u.fileInput.value = ""), zt(), J.busy = false, u.process.innerHTML = "\u91CD\u65B0\u5904\u7406 <span>\u2192</span>", At();
   }
@@ -2815,7 +2838,11 @@ u.batchWhitePad.onclick = () => {
 };
 u.batchSmartExtend.onclick = () => {
   if (!J.files.length || J.busy) return;
-  u.fit.value = "extend", u.keepRatio.checked = false, u.lock.classList.remove("active"), Jt();
+  if (!location.hostname.endsWith("chatgpt.site")) {
+    window.open("https://nina-creative-ai.bestieninax.chatgpt.site", "_blank", "noopener"), re("AI 场景自然延展已在新页面打开，请在那里重新选择图片。");
+    return;
+  }
+  u.width.value = "1000", u.height.value = "1000", u.sizePreset.value = "1000x1000", u.fit.value = "extend", u.keepRatio.checked = false, u.lock.classList.remove("active"), Jt();
 };
 u.chooseSavePath.onclick = async () => {
   if (!window.showDirectoryPicker) {
@@ -2929,7 +2956,7 @@ u.height.oninput = () => {
 };
 u.sizePreset.onchange = () => {
   const C = { "800x800": [800, 800], "1000x1000": [1e3, 1e3], "1340x1785": [1340, 1785] }[u.sizePreset.value];
-  C && ([u.width.value, u.height.value] = C, u.keepRatio.checked = false, u.lock.classList.remove("active"), C[0] === C[1] && (u.fit.value = "extend"));
+  C && ([u.width.value, u.height.value] = C, u.keepRatio.checked = false, u.lock.classList.remove("active"));
 };
 u.lock.onclick = () => {
   u.keepRatio.checked = !u.keepRatio.checked, u.lock.classList.toggle("active", u.keepRatio.checked);
