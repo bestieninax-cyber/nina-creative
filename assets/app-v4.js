@@ -2417,13 +2417,22 @@ batchWhitePadButton.className = "secondary-button small";
 batchWhitePadButton.type = "button";
 batchWhitePadButton.textContent = "批量不裁剪·自动加白";
 batchWhitePadButton.disabled = true;
+const batchSmartExtendButton = document.createElement("button");
+batchSmartExtendButton.id = "batchSmartExtend";
+batchSmartExtendButton.className = "secondary-button small";
+batchSmartExtendButton.type = "button";
+batchSmartExtendButton.textContent = "批量智能扩边";
+batchSmartExtendButton.disabled = true;
 saveActions.insertBefore(refreshResultsButton, u.selectAllResults);
 saveActions.insertBefore(clearAllResultsButton, u.selectAllResults);
 saveActions.insertBefore(batchWhitePadButton, u.selectAllResults);
+saveActions.insertBefore(batchSmartExtendButton, u.selectAllResults);
 u.refreshResults = refreshResultsButton;
 u.clearAllResults = clearAllResultsButton;
 u.batchWhitePad = batchWhitePadButton;
+u.batchSmartExtend = batchSmartExtendButton;
 u.sizePreset.querySelector('[value="800x800"]').insertAdjacentHTML("afterend", '<option value="1000x1000">1000 × 1000 px</option>');
+u.fit.insertAdjacentHTML("beforeend", '<option value="extend">智能扩边（无白边）</option>');
 be.append(u.resultsSection);
 be.insertAdjacentElement("afterend", _e);
 u.resultsSection.classList.add("results-in-workspace");
@@ -2488,7 +2497,7 @@ function oe(s) {
   }), At();
 }
 function At() {
-  if (u.count.textContent = J.files.length, u.clear.hidden = !J.files.length, u.process.disabled = !J.files.length || J.busy, u.batchWhitePad.disabled = !J.files.length || J.busy, u.queue.classList.toggle("empty", !J.files.length), !J.files.length) {
+  if (u.count.textContent = J.files.length, u.clear.hidden = !J.files.length, u.process.disabled = !J.files.length || J.busy, u.batchWhitePad.disabled = !J.files.length || J.busy, u.batchSmartExtend.disabled = !J.files.length || J.busy, u.queue.classList.toggle("empty", !J.files.length), !J.files.length) {
     u.queue.innerHTML = '<div class="empty-state"><span>\u25A7</span><p>\u6DFB\u52A0\u56FE\u7247\u540E\u5C06\u5728\u8FD9\u91CC\u9884\u89C8</p></div>';
     return;
   }
@@ -2609,6 +2618,13 @@ function Xt(s) {
 }
 function Fe(s, C, i, A) {
   const m = u.fit.value, a = Number(u.zoom.value) / 100, o = Number(u.positionX.value) / 100, r = Number(u.positionY.value) / 100;
+  if (m === "extend") {
+    const l = Math.max(i / C.naturalWidth, A / C.naturalHeight) * 1.08, g = C.naturalWidth * l, n = C.naturalHeight * l;
+    s.save(), s.filter = `blur(${Math.max(14, Math.round(Math.min(i, A) * 0.022))}px) brightness(0.96) saturate(0.94)`, s.globalAlpha = 0.98, s.drawImage(C, (i - g) / 2, (A - n) / 2, g, n), s.restore();
+    const d = Math.min(i / C.naturalWidth, A / C.naturalHeight) * a, c = C.naturalWidth * d, v = C.naturalHeight * d;
+    s.drawImage(C, (i - c) * o, (A - v) * r, c, v);
+    return;
+  }
   if (m === "stretch") {
     const _ = i * a, l = A * a;
     s.drawImage(C, (i - _) * o, (A - l) * r, _, l);
@@ -2797,6 +2813,10 @@ u.batchWhitePad.onclick = () => {
   if (!J.files.length || J.busy) return;
   u.fit.value = "contain", u.bgColor.value = "#ffffff", u.bgHex.value = "#FFFFFF", u.keepRatio.checked = false, u.lock.classList.remove("active"), Jt();
 };
+u.batchSmartExtend.onclick = () => {
+  if (!J.files.length || J.busy) return;
+  u.fit.value = "extend", u.keepRatio.checked = false, u.lock.classList.remove("active"), Jt();
+};
 u.chooseSavePath.onclick = async () => {
   if (!window.showDirectoryPicker) {
     u.savePathName.textContent = "\u5F53\u524D\u6D4F\u89C8\u5668\u4E0D\u652F\u6301\u6587\u4EF6\u5939\u9009\u62E9";
@@ -2909,7 +2929,7 @@ u.height.oninput = () => {
 };
 u.sizePreset.onchange = () => {
   const C = { "800x800": [800, 800], "1000x1000": [1e3, 1e3], "1340x1785": [1340, 1785] }[u.sizePreset.value];
-  C && ([u.width.value, u.height.value] = C, u.keepRatio.checked = false, u.lock.classList.remove("active"));
+  C && ([u.width.value, u.height.value] = C, u.keepRatio.checked = false, u.lock.classList.remove("active"), C[0] === C[1] && (u.fit.value = "extend"));
 };
 u.lock.onclick = () => {
   u.keepRatio.checked = !u.keepRatio.checked, u.lock.classList.toggle("active", u.keepRatio.checked);
