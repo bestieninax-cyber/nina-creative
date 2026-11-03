@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nina-creative-pwa-github-v10';
+const CACHE_NAME = 'nina-creative-pwa-github-v11';
 const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const CORE_ASSETS = [
   `${BASE_PATH}index.html`,
@@ -63,15 +63,13 @@ self.addEventListener('fetch', event => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cacheKey = event.request.mode === 'navigate' ? `${BASE_PATH}index.html` : event.request;
-    const cached = await cache.match(cacheKey);
-
-    if (cached) return cached;
-
     try {
-      const response = await fetch(event.request);
+      const response = await fetch(event.request, { cache: 'no-store' });
       if (response.ok) await cache.put(cacheKey, response.clone());
       return response;
     } catch (_) {
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
       return new Response('离线资源尚未准备完成。请先联网打开 Nina Creative 一次，再从手机桌面进入。', {
         status: 503,
         headers: { 'Content-Type': 'text/plain; charset=utf-8' }
