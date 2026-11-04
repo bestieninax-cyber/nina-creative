@@ -2431,6 +2431,59 @@ u.refreshResults = refreshResultsButton;
 u.clearAllResults = clearAllResultsButton;
 u.batchWhitePad = batchWhitePadButton;
 u.batchSmartExtend = batchSmartExtendButton;
+const aiProgressStyle = document.createElement("style");
+aiProgressStyle.textContent = `
+  .ai-progress-panel{margin:18px 30px 4px;padding:18px 20px;border:1.5px solid #84aff0;border-radius:18px;background:linear-gradient(135deg,#f5f9ff,#eef5ff);box-shadow:0 12px 28px rgba(55,118,210,.12)}
+  .ai-progress-panel[hidden]{display:none}
+  .ai-progress-head{display:flex;align-items:center;justify-content:space-between;gap:16px;color:#174b9a}
+  .ai-progress-head strong{font-size:17px}
+  .ai-progress-head span{font:700 16px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#2f7fe8}
+  .ai-progress-track{height:12px;margin:14px 0 11px;overflow:hidden;border-radius:999px;background:#dce9fa}
+  .ai-progress-bar{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#3f88ef,#69a8ff);transition:width .45s ease}
+  .ai-progress-panel p{margin:0;color:#345a88;font-weight:700}
+  .ai-progress-panel small{display:block;margin-top:7px;color:#7791b0}
+  .ai-progress-panel.is-error{border-color:#efb2ad;background:#fff7f6}
+  .ai-progress-panel.is-error .ai-progress-bar{background:#df746a}
+  @media(max-width:760px){.ai-progress-panel{margin:14px 16px 2px;padding:16px}.ai-progress-head{align-items:flex-start}.ai-progress-head strong{font-size:15px}}
+`;
+document.head.append(aiProgressStyle);
+const aiProgressPanel = document.createElement("section");
+aiProgressPanel.id = "aiProgressPanel";
+aiProgressPanel.className = "ai-progress-panel";
+aiProgressPanel.hidden = true;
+aiProgressPanel.setAttribute("role", "status");
+aiProgressPanel.setAttribute("aria-live", "polite");
+aiProgressPanel.innerHTML = '<div class="ai-progress-head"><strong id="aiProgressTitle">AI 场景自然延展处理中</strong><span id="aiProgressPercent">0%</span></div><div class="ai-progress-track" aria-hidden="true"><span id="aiProgressBar" class="ai-progress-bar"></span></div><p id="aiProgressStage">正在准备图片…</p><small id="aiProgressMeta">第 1 / 1 张 · 已用时 0 秒</small>';
+u.resultsSection.querySelector(".content-head").insertAdjacentElement("afterend", aiProgressPanel);
+const aiProgressTitle = aiProgressPanel.querySelector("#aiProgressTitle"), aiProgressPercent = aiProgressPanel.querySelector("#aiProgressPercent"), aiProgressBar = aiProgressPanel.querySelector("#aiProgressBar"), aiProgressStage = aiProgressPanel.querySelector("#aiProgressStage"), aiProgressMeta = aiProgressPanel.querySelector("#aiProgressMeta");
+let aiProgressTimer = null, aiProgressState = null, aiProgressHideTimer = null;
+function aiElapsedText(ms) {
+  const seconds = Math.max(0, Math.floor(ms / 1e3)), minutes = Math.floor(seconds / 60), rest = seconds % 60;
+  return minutes ? `${minutes} 分 ${rest} 秒` : `${rest} 秒`;
+}
+function renderAiProgress() {
+  if (!aiProgressState) return;
+  const now = Date.now(), total = Math.max(1, aiProgressState.total), completed = Math.min(aiProgressState.completed, total), currentRatio = completed >= total ? 0 : Math.min(.92, .06 + (now - aiProgressState.currentStartedAt) / 9e4 * .86), percent = completed >= total ? 100 : Math.max(1, Math.min(99, Math.round((completed + currentRatio) / total * 100))), current = Math.min(total, completed + 1);
+  aiProgressPercent.textContent = `${percent}%`, aiProgressBar.style.width = `${percent}%`, aiProgressStage.textContent = aiProgressState.stage, aiProgressMeta.textContent = `第 ${current} / ${total} 张 · 已用时 ${aiElapsedText(now - aiProgressState.startedAt)}`;
+}
+function startAiProgress(total) {
+  clearInterval(aiProgressTimer), clearTimeout(aiProgressHideTimer), aiProgressPanel.hidden = false, aiProgressPanel.classList.remove("is-error"), aiProgressTitle.textContent = "AI 场景自然延展处理中", aiProgressState = { total: Math.max(1, total), completed: 0, startedAt: Date.now(), currentStartedAt: Date.now(), stage: "正在准备第 1 张图片…" }, renderAiProgress(), aiProgressTimer = setInterval(renderAiProgress, 1e3);
+}
+function setAiProgressStage(stage) {
+  aiProgressState && (aiProgressState.stage = stage, renderAiProgress());
+}
+function completeAiProgressItem(completed) {
+  aiProgressState && (aiProgressState.completed = completed, aiProgressState.currentStartedAt = Date.now(), aiProgressState.stage = completed < aiProgressState.total ? `正在准备第 ${completed + 1} 张图片…` : "全部图片已生成，正在整理处理结果…", renderAiProgress());
+}
+function finishAiProgress(success, message = "") {
+  if (!aiProgressState) return;
+  clearInterval(aiProgressTimer), aiProgressTimer = null;
+  if (success) {
+    aiProgressState.completed = aiProgressState.total, aiProgressState.stage = "AI 场景自然延展已完成", aiProgressTitle.textContent = "处理完成", renderAiProgress(), aiProgressHideTimer = setTimeout(() => aiProgressPanel.hidden = true, 3500);
+  } else {
+    aiProgressPanel.classList.add("is-error"), aiProgressTitle.textContent = "处理未完成", aiProgressState.stage = message || "处理失败，请稍后重试。", renderAiProgress();
+  }
+}
 u.sizePreset.querySelector('[value="800x800"]').insertAdjacentHTML("afterend", '<option value="1000x1000">1000 × 1000 px</option>');
 u.fit.insertAdjacentHTML("beforeend", '<option value="extend">AI 场景自然延展（联网）</option>');
 be.append(u.resultsSection);
@@ -2588,6 +2641,7 @@ async function createNaturalSceneExtension(s) {
     window.open(C, "_blank", "noopener");
     throw new Error("AI 场景自然延展已在新页面打开，请在那里重新选择图片。");
   }
+  setAiProgressStage("正在准备透明扩图区域…");
   const i = 1024, A = document.createElement("canvas");
   A.width = i, A.height = i;
   const m = A.getContext("2d"), a = Math.min(i / s.naturalWidth, i / s.naturalHeight), o = Math.round(s.naturalWidth * a), r = Math.round(s.naturalHeight * a), h = Math.round((i - o) / 2), b = Math.round((i - r) / 2);
@@ -2596,12 +2650,14 @@ async function createNaturalSceneExtension(s) {
   k.width = i, k.height = i;
   const w = k.getContext("2d");
   w.clearRect(0, 0, i, i), w.fillStyle = "#ffffff", w.fillRect(h, b, o, r);
+  setAiProgressStage("AI 正在分析边缘并生成自然场景，请保持页面开启…");
   const _ = await fetch("/api/outpaint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: A.toDataURL("image/png"), mask: k.toDataURL("image/png") }) }), l = await _.json().catch(() => ({}));
   if (_.status === 401 && l.sign_in_url) {
     location.href = l.sign_in_url;
     throw new Error("正在前往登录页面…");
   }
   if (!_.ok || !l.image) throw new Error(l.message || "AI 场景自然延展失败，请稍后重试。");
+  setAiProgressStage("已收到 AI 图片，正在合成原图与延展场景…");
   const g = await loadSceneImage(l.image), n = document.createElement("canvas");
   n.width = i, n.height = i;
   const d = n.getContext("2d");
@@ -2736,19 +2792,21 @@ function zt() {
 }
 zt();
 async function Jt() {
-  const s = [...J.files];
-  J.busy = true, At(), u.process.innerHTML = "\u5904\u7406\u4E2D\u2026 <span>\u25CC</span>", Rt(), Kt(), J.results = [], u.results.innerHTML = "", u.resultCount.textContent = "0", u.resultsSection.hidden = false;
+  const s = [...J.files], isAiExtension = u.fit.value === "extend";
+  J.busy = true, At(), u.process.innerHTML = "\u5904\u7406\u4E2D\u2026 <span>\u25CC</span>", Rt(), Kt(), J.results = [], u.results.innerHTML = "", u.resultCount.textContent = "0", u.resultsSection.hidden = false, isAiExtension ? startAiProgress(s.length) : aiProgressPanel.hidden = true;
   let C = false;
   try {
     for (let i = 0; i < s.length; i++) {
+      isAiExtension && setAiProgressStage(`正在准备第 ${i + 1} / ${s.length} 张图片…`);
       const A = await ue(s[i].file, i);
-      A.previewUrl = URL.createObjectURL(A.blob), A.selected = false, A.pinned = false, J.results.push(A), u.resultCount.textContent = String(J.results.length), u.process.innerHTML = `\u5904\u7406\u4E2D ${J.results.length}/${s.length} <span>\u25CC</span>`;
+      A.previewUrl = URL.createObjectURL(A.blob), A.selected = false, A.pinned = false, J.results.push(A), u.resultCount.textContent = String(J.results.length), u.process.innerHTML = `\u5904\u7406\u4E2D ${J.results.length}/${s.length} <span>\u25CC</span>`, isAiExtension && completeAiProgressItem(i + 1);
     }
     C = true;
   } catch (i) {
-    re((i == null ? void 0 : i.message) || "处理失败，请稍后重试。");
+    const message = (i == null ? void 0 : i.message) || "处理失败，请稍后重试。";
+    isAiExtension && finishAiProgress(false, message), re(message);
   } finally {
-    C && (u.fileInput.value = ""), zt(), J.busy = false, u.process.innerHTML = "\u91CD\u65B0\u5904\u7406 <span>\u2192</span>", At();
+    C && (u.fileInput.value = ""), C && isAiExtension && finishAiProgress(true), zt(), J.busy = false, u.process.innerHTML = "\u91CD\u65B0\u5904\u7406 <span>\u2192</span>", At();
   }
   C && u.resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -2966,6 +3024,7 @@ u.height.oninput = () => {
 u.sizePreset.onchange = () => {
   const C = { "800x800": [800, 800], "1000x1000": [1e3, 1e3], "1340x1785": [1340, 1785] }[u.sizePreset.value];
   C && ([u.width.value, u.height.value] = C, u.keepRatio.checked = false, u.lock.classList.remove("active"));
+  u.sizePreset.value === "1000x1000" && (u.fit.value = "contain", u.watermarkTextMode.value = "single", u.watermarkTextOpacity.value = "100", u.watermarkTextOpacityValue.textContent = "100%", u.watermarkTextAngle.value = "0", u.watermarkTextAngleValue.textContent = "0\xB0", u.watermarkFontSize.value = "30", u.watermarkFontSizeValue.textContent = "30 px");
 };
 u.lock.onclick = () => {
   u.keepRatio.checked = !u.keepRatio.checked, u.lock.classList.toggle("active", u.keepRatio.checked);
