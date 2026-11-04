@@ -2427,8 +2427,8 @@ const aiSpeedMode = document.createElement("select");
 aiSpeedMode.id = "aiSpeedMode";
 aiSpeedMode.className = "ai-speed-mode";
 aiSpeedMode.setAttribute("aria-label", "AI 场景自然延展速度模式");
-aiSpeedMode.innerHTML = '<option value="fast" selected>AI 快速模式</option><option value="precision">AI 精细模式</option>';
-aiSpeedMode.title = "快速模式生成更快；精细模式边缘细节更稳定";
+aiSpeedMode.innerHTML = '<option value="fast" selected>AI 省钱快速模式</option><option value="precision">AI 精细模式</option>';
+aiSpeedMode.title = "省钱快速模式使用低成本模型；精细模式边缘细节更稳定";
 saveActions.insertBefore(refreshResultsButton, u.selectAllResults);
 saveActions.insertBefore(clearAllResultsButton, u.selectAllResults);
 saveActions.insertBefore(batchWhitePadButton, u.selectAllResults);
@@ -2477,7 +2477,7 @@ function renderAiProgress() {
   aiProgressPercent.textContent = `${percent}%`, aiProgressBar.style.width = `${percent}%`, aiProgressStage.textContent = aiProgressState.stage, aiProgressMeta.textContent = `第 ${current} / ${total} 张 · 已用时 ${aiElapsedText(now - aiProgressState.startedAt)}`;
 }
 function startAiProgress(total) {
-  const modeName = u.aiSpeedMode.value === "precision" ? "精细模式" : "快速模式";
+  const modeName = u.aiSpeedMode.value === "precision" ? "精细模式" : "省钱快速模式";
   clearInterval(aiProgressTimer), clearTimeout(aiProgressHideTimer), aiProgressPanel.hidden = false, aiProgressPanel.classList.remove("is-error"), aiProgressTitle.textContent = `AI 场景自然延展 · ${modeName}`, aiProgressState = { total: Math.max(1, total), completed: 0, startedAt: Date.now(), currentStartedAt: Date.now(), stage: "正在准备第 1 张图片…" }, renderAiProgress(), aiProgressTimer = setInterval(renderAiProgress, 1e3);
 }
 function setAiProgressStage(stage) {
