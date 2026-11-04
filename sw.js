@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nina-creative-pwa-github-v16';
+const CACHE_NAME = 'nina-creative-pwa-github-v17';
 const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const CORE_ASSETS = [
   `${BASE_PATH}index.html`,
