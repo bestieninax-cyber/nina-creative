@@ -2644,12 +2644,13 @@ async function createNaturalSceneExtension(s) {
   setAiProgressStage("正在准备透明扩图区域…");
   const i = 1024, A = document.createElement("canvas");
   A.width = i, A.height = i;
-  const m = A.getContext("2d"), a = Math.min(i / s.naturalWidth, i / s.naturalHeight), o = Math.round(s.naturalWidth * a), r = Math.round(s.naturalHeight * a), h = Math.round((i - o) / 2), b = Math.round((i - r) / 2);
+  const m = A.getContext("2d"), a = Math.min(i / s.naturalWidth, i / s.naturalHeight), o = Math.round(s.naturalWidth * a), r = Math.round(s.naturalHeight * a), h = Math.round((i - o) / 2), b = Math.round((i - r) / 2), feather = Math.max(32, Math.min(72, Math.round(Math.min(o, r) * .07)));
   m.clearRect(0, 0, i, i), m.drawImage(s, h, b, o, r);
   const k = document.createElement("canvas");
   k.width = i, k.height = i;
   const w = k.getContext("2d");
-  w.clearRect(0, 0, i, i), w.fillStyle = "#ffffff", w.fillRect(h, b, o, r);
+  w.clearRect(0, 0, i, i), w.fillStyle = "#ffffff";
+  o < i ? w.fillRect(h + feather, b, Math.max(1, o - feather * 2), r) : r < i ? w.fillRect(h, b + feather, o, Math.max(1, r - feather * 2)) : w.fillRect(h, b, o, r);
   setAiProgressStage("AI 正在分析边缘并生成自然场景，请保持页面开启…");
   const _ = await fetch("/api/outpaint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: A.toDataURL("image/png"), mask: k.toDataURL("image/png") }) }), l = await _.json().catch(() => ({}));
   if (_.status === 401 && l.sign_in_url) {
@@ -2660,8 +2661,22 @@ async function createNaturalSceneExtension(s) {
   setAiProgressStage("已收到 AI 图片，正在合成原图与延展场景…");
   const g = await loadSceneImage(l.image), n = document.createElement("canvas");
   n.width = i, n.height = i;
-  const d = n.getContext("2d");
-  d.drawImage(g, 0, 0, i, i), d.drawImage(s, h, b, o, r);
+  const d = n.getContext("2d"), originalLayer = document.createElement("canvas");
+  originalLayer.width = i, originalLayer.height = i;
+  const originalContext = originalLayer.getContext("2d");
+  originalContext.drawImage(s, h, b, o, r), originalContext.globalCompositeOperation = "destination-in";
+  if (o < i) {
+    const leftFade = originalContext.createLinearGradient(h, 0, h + feather, 0);
+    leftFade.addColorStop(0, "rgba(255,255,255,0)"), leftFade.addColorStop(1, "rgba(255,255,255,1)"), originalContext.fillStyle = leftFade, originalContext.fillRect(h, b, feather, r), originalContext.fillStyle = "#fff", originalContext.fillRect(h + feather, b, Math.max(1, o - feather * 2), r);
+    const rightFade = originalContext.createLinearGradient(h + o - feather, 0, h + o, 0);
+    rightFade.addColorStop(0, "rgba(255,255,255,1)"), rightFade.addColorStop(1, "rgba(255,255,255,0)"), originalContext.fillStyle = rightFade, originalContext.fillRect(h + o - feather, b, feather, r);
+  } else if (r < i) {
+    const topFade = originalContext.createLinearGradient(0, b, 0, b + feather);
+    topFade.addColorStop(0, "rgba(255,255,255,0)"), topFade.addColorStop(1, "rgba(255,255,255,1)"), originalContext.fillStyle = topFade, originalContext.fillRect(h, b, o, feather), originalContext.fillStyle = "#fff", originalContext.fillRect(h, b + feather, o, Math.max(1, r - feather * 2));
+    const bottomFade = originalContext.createLinearGradient(0, b + r - feather, 0, b + r);
+    bottomFade.addColorStop(0, "rgba(255,255,255,1)"), bottomFade.addColorStop(1, "rgba(255,255,255,0)"), originalContext.fillStyle = bottomFade, originalContext.fillRect(h, b + r - feather, o, feather);
+  } else originalContext.fillStyle = "#fff", originalContext.fillRect(h, b, o, r);
+  originalContext.globalCompositeOperation = "source-over", d.drawImage(g, 0, 0, i, i), d.drawImage(originalLayer, 0, 0);
   return n;
 }
 function Ne(s, C, i, A) {
