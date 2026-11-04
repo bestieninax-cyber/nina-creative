@@ -2423,14 +2423,22 @@ batchSmartExtendButton.className = "secondary-button small";
 batchSmartExtendButton.type = "button";
 batchSmartExtendButton.textContent = "AI 场景自然延展";
 batchSmartExtendButton.disabled = true;
+const aiSpeedMode = document.createElement("select");
+aiSpeedMode.id = "aiSpeedMode";
+aiSpeedMode.className = "ai-speed-mode";
+aiSpeedMode.setAttribute("aria-label", "AI 场景自然延展速度模式");
+aiSpeedMode.innerHTML = '<option value="fast" selected>AI 快速模式</option><option value="precision">AI 精细模式</option>';
+aiSpeedMode.title = "快速模式生成更快；精细模式边缘细节更稳定";
 saveActions.insertBefore(refreshResultsButton, u.selectAllResults);
 saveActions.insertBefore(clearAllResultsButton, u.selectAllResults);
 saveActions.insertBefore(batchWhitePadButton, u.selectAllResults);
+saveActions.insertBefore(aiSpeedMode, u.selectAllResults);
 saveActions.insertBefore(batchSmartExtendButton, u.selectAllResults);
 u.refreshResults = refreshResultsButton;
 u.clearAllResults = clearAllResultsButton;
 u.batchWhitePad = batchWhitePadButton;
 u.batchSmartExtend = batchSmartExtendButton;
+u.aiSpeedMode = aiSpeedMode;
 const aiProgressStyle = document.createElement("style");
 aiProgressStyle.textContent = `
   .ai-progress-panel{margin:18px 30px 4px;padding:18px 20px;border:1.5px solid #84aff0;border-radius:18px;background:linear-gradient(135deg,#f5f9ff,#eef5ff);box-shadow:0 12px 28px rgba(55,118,210,.12)}
@@ -2444,6 +2452,8 @@ aiProgressStyle.textContent = `
   .ai-progress-panel small{display:block;margin-top:7px;color:#7791b0}
   .ai-progress-panel.is-error{border-color:#efb2ad;background:#fff7f6}
   .ai-progress-panel.is-error .ai-progress-bar{background:#df746a}
+  .ai-speed-mode{min-height:38px;padding:8px 30px 8px 11px;border:1px solid #9fc5df;border-radius:8px;background:#fff;color:#174b9a;font-size:11px;font-weight:700}
+  .ai-speed-mode:focus{outline:2px solid #b9d5f7;outline-offset:1px}
   @media(max-width:760px){.ai-progress-panel{margin:14px 16px 2px;padding:16px}.ai-progress-head{align-items:flex-start}.ai-progress-head strong{font-size:15px}}
 `;
 document.head.append(aiProgressStyle);
@@ -2467,7 +2477,8 @@ function renderAiProgress() {
   aiProgressPercent.textContent = `${percent}%`, aiProgressBar.style.width = `${percent}%`, aiProgressStage.textContent = aiProgressState.stage, aiProgressMeta.textContent = `第 ${current} / ${total} 张 · 已用时 ${aiElapsedText(now - aiProgressState.startedAt)}`;
 }
 function startAiProgress(total) {
-  clearInterval(aiProgressTimer), clearTimeout(aiProgressHideTimer), aiProgressPanel.hidden = false, aiProgressPanel.classList.remove("is-error"), aiProgressTitle.textContent = "AI 场景自然延展处理中", aiProgressState = { total: Math.max(1, total), completed: 0, startedAt: Date.now(), currentStartedAt: Date.now(), stage: "正在准备第 1 张图片…" }, renderAiProgress(), aiProgressTimer = setInterval(renderAiProgress, 1e3);
+  const modeName = u.aiSpeedMode.value === "precision" ? "精细模式" : "快速模式";
+  clearInterval(aiProgressTimer), clearTimeout(aiProgressHideTimer), aiProgressPanel.hidden = false, aiProgressPanel.classList.remove("is-error"), aiProgressTitle.textContent = `AI 场景自然延展 · ${modeName}`, aiProgressState = { total: Math.max(1, total), completed: 0, startedAt: Date.now(), currentStartedAt: Date.now(), stage: "正在准备第 1 张图片…" }, renderAiProgress(), aiProgressTimer = setInterval(renderAiProgress, 1e3);
 }
 function setAiProgressStage(stage) {
   aiProgressState && (aiProgressState.stage = stage, renderAiProgress());
@@ -2652,7 +2663,7 @@ async function createNaturalSceneExtension(s) {
   w.clearRect(0, 0, i, i), w.fillStyle = "#ffffff";
   o < i ? w.fillRect(h + feather, b, Math.max(1, o - feather * 2), r) : r < i ? w.fillRect(h, b + feather, o, Math.max(1, r - feather * 2)) : w.fillRect(h, b, o, r);
   setAiProgressStage("AI 正在分析边缘并生成自然场景，请保持页面开启…");
-  const _ = await fetch("/api/outpaint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: A.toDataURL("image/png"), mask: k.toDataURL("image/png") }) }), l = await _.json().catch(() => ({}));
+  const _ = await fetch("/api/outpaint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: A.toDataURL("image/png"), mask: k.toDataURL("image/png"), mode: u.aiSpeedMode.value }) }), l = await _.json().catch(() => ({}));
   if (_.status === 401 && l.sign_in_url) {
     location.href = l.sign_in_url;
     throw new Error("正在前往登录页面…");
