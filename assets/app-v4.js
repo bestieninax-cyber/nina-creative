@@ -2342,31 +2342,14 @@ const Ie = Ee(Ae), Wt = window.location.pathname.startsWith("/nina-creative/") ?
 document.documentElement.style.setProperty("--site-background-url", `url("${Wt}site-background.png")`);
 let ge = false;
 "serviceWorker" in navigator && window.addEventListener("load", async () => {
-  const C = document.querySelector("#offlineStatus");
-  const markReady = () => {
-    ge = true;
-    C && (C.textContent = "\u53EF\u79BB\u7EBF\u4F7F\u7528", C.classList.add("ready"));
-  };
-  const markUnavailable = () => {
-    C && (C.textContent = "\u9700\u8054\u7F51\u51C6\u5907\u79BB\u7EBF\u529F\u80FD");
-  };
   try {
-    const registration = await navigator.serviceWorker.register(`${Wt}sw.js`, { scope: Wt, updateViaCache: "none" });
-    try {
-      await registration.update();
-    } catch {
-      // Updating is expected to fail while offline; an existing worker can still serve the cache.
-    }
-    await navigator.serviceWorker.ready;
-    markReady();
+    await (await navigator.serviceWorker.register(`${Wt}sw.js`, { scope: Wt, updateViaCache: "none" })).update(), await navigator.serviceWorker.ready, ge = true;
+    const C = document.querySelector("#offlineStatus");
+    C && (C.textContent = "\u53EF\u79BB\u7EBF\u4F7F\u7528", C.classList.add("ready"));
   } catch {
-    if (navigator.serviceWorker.controller) {
-      markReady();
-    } else {
-      markUnavailable();
-    }
+    const C = document.querySelector("#offlineStatus");
+    C && (C.textContent = "\u9700\u8054\u7F51\u51C6\u5907\u79BB\u7EBF\u529F\u80FD");
   }
-  navigator.serviceWorker.addEventListener("controllerchange", markReady, { once: true });
 });
 const Te = document.querySelector("#app"), Oe = 1e3, J = { files: [], results: [], busy: false };
 Te.innerHTML = `
@@ -2578,7 +2561,8 @@ function oe(s) {
   }), At();
 }
 function At() {
-  if (u.count.textContent = J.files.length, u.clear.hidden = !J.files.length, u.process.disabled = !J.files.length || J.busy, u.batchWhitePad.disabled = !J.files.length || J.busy, u.batchSmartExtend.disabled = !J.files.length || J.busy, u.queue.classList.toggle("empty", !J.files.length), !J.files.length) {
+  const s = J.files.length > 0 || J.results.length > 0;
+  if (u.count.textContent = J.files.length, u.clear.hidden = !J.files.length, u.process.disabled = !J.files.length || J.busy, u.batchWhitePad.disabled = !s || J.busy, u.batchSmartExtend.disabled = !s || J.busy, u.queue.classList.toggle("empty", !J.files.length), !J.files.length) {
     u.queue.innerHTML = '<div class="empty-state"><span>\u25A7</span><p>\u6DFB\u52A0\u56FE\u7247\u540E\u5C06\u5728\u8FD9\u91CC\u9884\u89C8</p></div>';
     return;
   }
@@ -2806,6 +2790,12 @@ function Kt(s = J.results) {
     C.previewUrl && URL.revokeObjectURL(C.previewUrl), C.previewUrl = "", C.blob = null, C.baseBlob = null;
   });
 }
+function releaseSavedResults(s) {
+  if (!s.length) return;
+  Rt(), u.previewModal.hidden = true, Kt(s);
+  const C = new Set(s);
+  J.results = J.results.filter((i) => !C.has(i)), zt();
+}
 function Me(s, C) {
   const i = s.original ? ` \xB7 ${Math.round((1 - s.blob.size / s.original) * 100)}%` : "";
   return `<article class="result-card${s.selected ? " selected" : ""}${s.pinned ? " pinned" : ""}" data-result-card="${C}">
@@ -2829,6 +2819,9 @@ function zt() {
   u.deleteSelectedResults.textContent = C ? `\u6279\u91CF\u5220\u9664\uFF08${C}\uFF09` : "\u6279\u91CF\u5220\u9664";
   u.refreshResults.disabled = J.results.length === 0;
   u.clearAllResults.disabled = J.results.length === 0;
+  const A = J.files.length > 0 || J.results.length > 0;
+  u.batchWhitePad.disabled = !A || J.busy;
+  u.batchSmartExtend.disabled = !A || J.busy;
   [u.downloadSingle, u.downloadMultiple, u.downloadZip].forEach((A) => {
     A.disabled = J.results.length === 0;
   });
@@ -2849,7 +2842,7 @@ async function Jt() {
     const message = (i == null ? void 0 : i.message) || "处理失败，请稍后重试。";
     isAiExtension && finishAiProgress(false, message), re(message);
   } finally {
-    C && (u.fileInput.value = ""), C && isAiExtension && finishAiProgress(true), zt(), J.busy = false, u.process.innerHTML = "\u91CD\u65B0\u5904\u7406 <span>\u2192</span>", At();
+    C && (s.forEach((i) => i.url && URL.revokeObjectURL(i.url)), J.files = [], u.fileInput.value = ""), C && isAiExtension && finishAiProgress(true), zt(), J.busy = false, u.process.innerHTML = "\u91CD\u65B0\u5904\u7406 <span>\u2192</span>", At();
   }
   C && u.resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -2942,12 +2935,25 @@ u.clear.onclick = () => {
   J.files.forEach((s) => URL.revokeObjectURL(s.url)), J.files = [], At();
 };
 u.process.onclick = Jt;
+function queueCurrentResultsForReprocessing() {
+  if (J.files.length || !J.results.length) return;
+  J.results.forEach((s, C) => {
+    const i = s.baseBlob || s.blob;
+    if (!i) return;
+    const A = new File([i], s.name || `result-${C + 1}.jpg`, { type: i.type || "image/jpeg" });
+    J.files.push({ file: A, url: URL.createObjectURL(A), width: s.width || 0, height: s.height || 0 });
+  });
+}
 u.batchWhitePad.onclick = () => {
-  if (!J.files.length || J.busy) return;
+  if (J.busy) return;
+  queueCurrentResultsForReprocessing();
+  if (!J.files.length) return;
   u.fit.value = "contain", u.bgColor.value = "#ffffff", u.bgHex.value = "#FFFFFF", u.keepRatio.checked = false, u.lock.classList.remove("active"), Jt();
 };
 u.batchSmartExtend.onclick = () => {
-  if (!J.files.length || J.busy) return;
+  if (J.busy) return;
+  queueCurrentResultsForReprocessing();
+  if (!J.files.length) return;
   if (!location.hostname.endsWith("chatgpt.site")) {
     window.open("https://nina-creative-ai.bestieninax.chatgpt.site", "_blank", "noopener"), re("AI 场景自然延展已在新页面打开，请在那里重新选择图片。");
     return;
@@ -2969,13 +2975,13 @@ const De = async () => {
   if (!J.results.length) return;
   const s = J.results.length, C = !!gt, i = gt == null ? void 0 : gt.name, A = new Set();
   let m = 0;
-  const a = [];
+  const a = [], savedResults = [];
   u.downloadMultiple.disabled = true, u.downloadMultiple.textContent = `\u4FDD\u5B58\u4E2D 0/${s}`;
   for (const o of J.results) {
     const r = Pt(Xt(o), A);
     try {
       const h = await Yt(o.blob, r, { strictDirectory: C });
-      h != null && h.ok ? m += 1 : a.push(r);
+      h != null && h.ok ? (m += 1, savedResults.push(o)) : a.push(r);
     } catch {
       a.push(r);
     }
@@ -2986,15 +2992,20 @@ const De = async () => {
     u.savePathName.textContent = `\u4FDD\u5B58\u5B8C\u6210\uFF1A${m}/${s} \u5F20\u6210\u529F\uFF0C${a.length} \u5F20\u5931\u8D25`;
     window.alert(`\u672C\u6B21\u5DF2\u4FDD\u5B58 ${m}/${s} \u5F20\u3002\n\u672A\u4FDD\u5B58\uFF1A${a.slice(0, 8).join("\u3001")}${a.length > 8 ? "\u7B49" : ""}\u3002\n\u8BF7\u68C0\u67E5\u6587\u4EF6\u5939\u5199\u5165\u6743\u9650\u540E\u91CD\u8BD5\u3002`);
   } else u.savePathName.textContent = C ? `\u5DF2\u4FDD\u5B58 ${m}/${s} \u5F20\u5230\uFF1A${i}` : `\u5DF2\u53D1\u8D77 ${m}/${s} \u5F20\u4E0B\u8F7D`;
-  zt();
+  releaseSavedResults(savedResults), zt();
 };
-u.downloadSingle.onclick = () => {
-  J.results[0] && Yt(J.results[0].blob, Xt(J.results[0]));
+u.downloadSingle.onclick = async () => {
+  const s = J.results[0];
+  if (!s) return;
+  const C = await Yt(s.blob, Xt(s));
+  C != null && C.ok && releaseSavedResults([s]);
 };
 u.downloadMultiple.onclick = De;
 u.downloadZip.onclick = async () => {
-  const s = new Ie(), C = new Set();
-  J.results.forEach((i) => s.file(Pt(Xt(i), C), i.blob)), await Yt(await s.generateAsync({ type: "blob" }), `pixel-workshop-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`);
+  const s = new Ie(), C = new Set(), i = [...J.results];
+  i.forEach((A) => s.file(Pt(Xt(A), C), A.blob));
+  const A = await Yt(await s.generateAsync({ type: "blob" }), `pixel-workshop-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`);
+  A != null && A.ok && releaseSavedResults(i);
 };
 u.selectAllResults.onclick = () => {
   const s = J.results.filter((i) => !i.pinned), C = !s.every((i) => i.selected);
@@ -3042,7 +3053,10 @@ u.results.onclick = (s) => {
   const m = s.target.closest("[data-result]");
   if (m) {
     const a = J.results[Number(m.dataset.result)];
-    a && Yt(a.blob, Xt(a));
+    if (!a) return;
+    Yt(a.blob, Xt(a)).then((o) => {
+      o != null && o.ok && releaseSavedResults([a]);
+    });
   }
 };
 u.prevPreview.onclick = () => Ht(-1);
