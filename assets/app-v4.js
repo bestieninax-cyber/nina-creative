@@ -2342,14 +2342,31 @@ const Ie = Ee(Ae), Wt = window.location.pathname.startsWith("/nina-creative/") ?
 document.documentElement.style.setProperty("--site-background-url", `url("${Wt}site-background.png")`);
 let ge = false;
 "serviceWorker" in navigator && window.addEventListener("load", async () => {
-  try {
-    await (await navigator.serviceWorker.register(`${Wt}sw.js`, { scope: Wt, updateViaCache: "none" })).update(), await navigator.serviceWorker.ready, ge = true;
-    const C = document.querySelector("#offlineStatus");
+  const C = document.querySelector("#offlineStatus");
+  const markReady = () => {
+    ge = true;
     C && (C.textContent = "\u53EF\u79BB\u7EBF\u4F7F\u7528", C.classList.add("ready"));
-  } catch {
-    const C = document.querySelector("#offlineStatus");
+  };
+  const markUnavailable = () => {
     C && (C.textContent = "\u9700\u8054\u7F51\u51C6\u5907\u79BB\u7EBF\u529F\u80FD");
+  };
+  try {
+    const registration = await navigator.serviceWorker.register(`${Wt}sw.js`, { scope: Wt, updateViaCache: "none" });
+    try {
+      await registration.update();
+    } catch {
+      // Updating is expected to fail while offline; an existing worker can still serve the cache.
+    }
+    await navigator.serviceWorker.ready;
+    markReady();
+  } catch {
+    if (navigator.serviceWorker.controller) {
+      markReady();
+    } else {
+      markUnavailable();
+    }
   }
+  navigator.serviceWorker.addEventListener("controllerchange", markReady, { once: true });
 });
 const Te = document.querySelector("#app"), Oe = 1e3, J = { files: [], results: [], busy: false };
 Te.innerHTML = `
